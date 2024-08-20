@@ -8,6 +8,9 @@ public class ZereiGamesUsadosCdkApp {
 
         var vpcStack = new VPCCdkStack(app, "VPC");
 
+        var clusterStack = new ECSCdkStack(app, "Cluster", vpcStack.getVpc());
+        clusterStack.addDependency(vpcStack);
+
         app.synth();
     }
 }
