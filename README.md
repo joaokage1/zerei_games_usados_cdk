@@ -51,6 +51,13 @@ Recurso de balanceamento de cargas entre instâncias.
 
 ### [Referência](https://aws.amazon.com/pt/fargate/)
 
+#### RDS
+É um serviço de banco de dados relacional de fácil 
+gerenciamento e otimizado para o custo total de propriedade.
+Use o comando seguinte para passar as variáveis:
+
+`cdk deploy --parameters RDS:databasePassword=db-password RDS Service01` 
+
 ___
 # GENERATED:
 # Welcome to your CDK Java project!
