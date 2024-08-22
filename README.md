@@ -58,6 +58,12 @@ Use o comando seguinte para passar as variáveis:
 
 `cdk deploy --parameters RDS:databasePassword=db-password RDS Service01` 
 
+#### SNS
+Serviço de publicação de eventos assíncronos.
+_Os clientes podem se inscrever no SNS tópico e receber mensagens publicadas usando 
+um tipo de endpoint compatível, como Amazon Data Firehose, SQS Amazon, AWS Lambda,HTTP, 
+e-mail, notificações push móveis e mensagens SMS de texto móveis_
+
 ___
 # GENERATED:
 # Welcome to your CDK Java project!
