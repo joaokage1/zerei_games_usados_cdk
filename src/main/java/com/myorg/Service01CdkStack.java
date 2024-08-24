@@ -1,13 +1,26 @@
 package com.myorg;
 
-import software.amazon.awscdk.*;
+import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Fn;
+import software.amazon.awscdk.RemovalPolicy;
+import software.amazon.awscdk.Stack;
+import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.applicationautoscaling.EnableScalingProps;
-import software.amazon.awscdk.services.ecs.*;
+import software.amazon.awscdk.services.ecs.AwsLogDriverProps;
+import software.amazon.awscdk.services.ecs.Cluster;
+import software.amazon.awscdk.services.ecs.ContainerImage;
+import software.amazon.awscdk.services.ecs.CpuUtilizationScalingProps;
+import software.amazon.awscdk.services.ecs.LogDriver;
+import software.amazon.awscdk.services.ecs.ScalableTaskCount;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedFargateService;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedTaskImageOptions;
 import software.amazon.awscdk.services.elasticloadbalancingv2.HealthCheck;
 import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.sns.subscriptions.SqsSubscription;
+import software.amazon.awscdk.services.sqs.DeadLetterQueue;
+import software.amazon.awscdk.services.sqs.Queue;
+import software.amazon.awscdk.services.sqs.QueueEncryption;
 import software.constructs.Construct;
 
 import java.util.HashMap;
@@ -21,6 +34,26 @@ public class Service01CdkStack extends Stack {
     public Service01CdkStack(final Construct scope, final String id, final StackProps props, final Cluster cluster, final SnsTopic stockChangedTopic) {
         super(scope, id, props);
 
+        //To be able to listen the topic
+        Queue gameStockEventsDLQ = Queue.Builder.create(this, "gameStockEventsDLQ")
+                .queueName("stock_changed_v1_dlq")
+                .enforceSsl(false)
+                .encryption(QueueEncryption.UNENCRYPTED)
+                .build();
+
+        DeadLetterQueue deadLetterQueue = DeadLetterQueue.builder()
+                .queue(gameStockEventsDLQ)
+                .maxReceiveCount(3)
+                .build();
+
+        Queue gameStockEvents = Queue.Builder.create(this, "gameStockEvents")
+                .queueName("stock_changed_v1")
+                .enforceSsl(false)
+                .encryption(QueueEncryption.UNENCRYPTED)
+                .deadLetterQueue(deadLetterQueue)
+                .build();
+
+
         Map<String, String> envVariables = new HashMap<>();
         envVariables.put("SPRING_DATASOURCE_URL", "jdbc:mariadb://"
                 + Fn.importValue("uri-db")
@@ -29,6 +62,7 @@ public class Service01CdkStack extends Stack {
         envVariables.put("SPRING_DATASOURCE_PASSWORD", Fn.importValue("password-db"));
         envVariables.put("AWS_REGION", "us-east-1");
         envVariables.put("AWS_SNS_STOCK_TOPIC", stockChangedTopic.getTopic().getTopicArn());
+        envVariables.put("AWS_SQS_QUEUE_STOCK_EVENTS_NAME", gameStockEvents.getQueueName());
 
         ApplicationLoadBalancedFargateService service01 = ApplicationLoadBalancedFargateService.Builder.create(this, "ALB01")
                 .serviceName("service-01")
@@ -75,6 +109,12 @@ public class Service01CdkStack extends Stack {
                         .scaleOutCooldown(Duration.seconds(60))
                         .build());
 
+        //Grant publishing/consuming
         stockChangedTopic.getTopic().grantPublish(service01.getTaskDefinition().getTaskRole());
+        gameStockEvents.grantConsumeMessages(service01.getTaskDefinition().getTaskRole());
+
+        //Adding a subscription
+        SqsSubscription sqsSubscription = SqsSubscription.Builder.create(gameStockEvents).build();
+        stockChangedTopic.getTopic().addSubscription(sqsSubscription);
     }
 }

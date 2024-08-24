@@ -17,7 +17,7 @@ public class RDSCdkStack extends Stack {
         super(scope, id, props);
 
         CfnParameter databasePassword = CfnParameter.Builder.create(this, "databasePassword")
-                .type("string")
+                .type("String")
                 .description("The RDS password")
                 .build();
 
