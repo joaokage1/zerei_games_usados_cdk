@@ -14,9 +14,12 @@ public class ZereiGamesUsadosCdkApp {
         var rdsStack = new RDSCdkStack(app, "RDS", vpcStack.getVpc());
         rdsStack.addDependency(vpcStack);
 
-        var serviceStack = new Service01CdkStack(app, "Service01", clusterStack.getCluster());
+        var snsStack = new SNSCdkStack(app, "SNS");
+
+        var serviceStack = new Service01CdkStack(app, "Service01", clusterStack.getCluster(), snsStack.getGamesStockEventsTopic());
         serviceStack.addDependency(clusterStack);
         serviceStack.addDependency(rdsStack);
+        serviceStack.addDependency(snsStack);
 
         app.synth();
     }
