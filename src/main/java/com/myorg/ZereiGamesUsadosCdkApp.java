@@ -16,10 +16,13 @@ public class ZereiGamesUsadosCdkApp {
 
         var snsStack = new SNSCdkStack(app, "SNS");
 
-        var serviceStack = new Service01CdkStack(app, "Service01", clusterStack.getCluster(), snsStack.getGamesStockEventsTopic());
+        DynamoDBCdkStack dbStack = new DynamoDBCdkStack(app, "DynamoDB01");
+
+        var serviceStack = new Service01CdkStack(app, "Service01", clusterStack.getCluster(), snsStack.getGamesStockEventsTopic(), dbStack.getGameStockEventsTable());
         serviceStack.addDependency(clusterStack);
         serviceStack.addDependency(rdsStack);
         serviceStack.addDependency(snsStack);
+        serviceStack.addDependency(dbStack);
 
         app.synth();
     }
