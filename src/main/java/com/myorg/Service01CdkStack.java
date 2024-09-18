@@ -6,6 +6,7 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.applicationautoscaling.EnableScalingProps;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.ecs.AwsLogDriverProps;
 import software.amazon.awscdk.services.ecs.Cluster;
 import software.amazon.awscdk.services.ecs.ContainerImage;
@@ -27,11 +28,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Service01CdkStack extends Stack {
-    public Service01CdkStack(final Construct scope, final String id, final Cluster cluster, final SnsTopic stockChangedTopic) {
-        this(scope, id, null, cluster, stockChangedTopic);
+    public Service01CdkStack(final Construct scope, final String id, final Cluster cluster, final SnsTopic stockChangedTopic, final Table gameEventsDdb) {
+        this(scope, id, null, cluster, stockChangedTopic, gameEventsDdb);
     }
 
-    public Service01CdkStack(final Construct scope, final String id, final StackProps props, final Cluster cluster, final SnsTopic stockChangedTopic) {
+    public Service01CdkStack(final Construct scope, final String id, final StackProps props, final Cluster cluster, final SnsTopic stockChangedTopic, final Table gameEventsDdb) {
         super(scope, id, props);
 
         //To be able to listen the topic
@@ -116,5 +117,7 @@ public class Service01CdkStack extends Stack {
         //Adding a subscription
         SqsSubscription sqsSubscription = SqsSubscription.Builder.create(gameStockEvents).build();
         stockChangedTopic.getTopic().addSubscription(sqsSubscription);
+
+        gameEventsDdb.grantReadWriteData(service01.getTaskDefinition().getTaskRole());
     }
 }
